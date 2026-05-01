@@ -1,0 +1,66 @@
+@startuml Auction Creation Workflow - Activity Diagram
+
+title Auction Creation Workflow - Activity Diagram
+
+|#LightBlue|**Seller**|
+start
+:Select approved item;
+
+:Fill auction details:
+Starting bid, Buy now price, Duration;
+
+:Validate form;
+
+if (Form valid?) then (No)
+  :Show validation errors;
+  stop
+else (Yes)
+endif
+
+:Submit create auction request;
+
+|#LightGreen|**System**|
+:Validate item exists;
+
+if (Item valid?) then (No)
+  |#LightBlue|**Seller**|
+  :Return error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Check item status is approved/pending;
+
+:Check seller owns item;
+
+:Check item has no active auction;
+
+:Validate start time < end time;
+
+if (All validations pass?) then (No)
+  |#LightBlue|**Seller**|
+  :Return validation error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Determine auction status:
+scheduled (if start time in future)
+or active (if start time now);
+
+:Create auction in database;
+
+:Update item status to archived;
+
+:Sync auction to vector database;
+
+:Send SignalR real-time updates;
+
+|#LightBlue|**Seller**|
+:Auction created successfully;
+stop
+
+@enduml
+

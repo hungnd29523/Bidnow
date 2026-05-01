@@ -1,0 +1,151 @@
+@startuml Place Bid Class Diagram
+
+title Place Bid - Class Diagram
+
+' ============================================
+' BID CONTROLLER LAYER
+' ============================================
+class BidController {
+    + PlaceBid(auctionId: int, request: BidRequestDto): BidResultDto
+    + GetRecentBids(auctionId: int, limit: int): List<BidDto>
+    + GetHighestBid(auctionId: int): decimal?
+    + GetBiddingHistory(bidderId: int, page: int, pageSize: int): PaginatedResultB<BiddingHistoryDto>
+    + GetDistinctBidders(auctionId: int): List<int>
+}
+
+' ============================================
+' BID SERVICE LAYER (INTERFACE)
+' ============================================
+interface IBidService {
+    + PlaceBidAsync(auctionId: int, bidderId: int, amount: decimal, isAutoBid: bool): BidResultDto
+    + GetRecentBidsAsync(auctionId: int, limit: int): List<BidDto>
+    + GetHighestBidAsync(auctionId: int): decimal?
+    + GetBiddingHistoryAsync(bidderId: int, page: int, pageSize: int): PaginatedResultB<BiddingHistoryDto>
+    + GetDistinctBidderIdsByAuctionAsync(auctionId: int): List<int>
+}
+
+' ============================================
+' BID SERVICE LAYER (IMPLEMENTATION)
+' ============================================
+class BidService {
+    + PlaceBidAsync(auctionId: int, bidderId: int, amount: decimal, isAutoBid: bool): BidResultDto
+    + GetRecentBidsAsync(auctionId: int, limit: int): List<BidDto>
+    + GetHighestBidAsync(auctionId: int): decimal?
+    + GetBiddingHistoryAsync(bidderId: int, page: int, pageSize: int): PaginatedResultB<BiddingHistoryDto>
+    + GetDistinctBidderIdsByAuctionAsync(auctionId: int): List<int>
+}
+
+' ============================================
+' BID REPOSITORY LAYER (INTERFACE)
+' ============================================
+interface IBidRepository {
+    + AddAsync(bid: Bid): Bid
+    + GetRecentByAuctionAsync(auctionId: int, limit: int): List<Bid>
+    + GetBidsByBidderAsync(bidderId: int, skip: int, take: int): List<Bid>
+    + GetTotalBidCountByBidderAsync(bidderId: int): int
+    + GetDistinctBidderIdsByAuctionAsync(auctionId: int): List<int>
+    + GetHighestBidByAuctionAsync(auctionId: int): Bid?
+}
+
+' ============================================
+' BID REPOSITORY LAYER (IMPLEMENTATION)
+' ============================================
+class BidRepository {
+    + AddAsync(bid: Bid): Bid
+    + GetRecentByAuctionAsync(auctionId: int, limit: int): List<Bid>
+    + GetBidsByBidderAsync(bidderId: int, skip: int, take: int): List<Bid>
+    + GetTotalBidCountByBidderAsync(bidderId: int): int
+    + GetDistinctBidderIdsByAuctionAsync(auctionId: int): List<int>
+    + GetHighestBidByAuctionAsync(auctionId: int): Bid?
+}
+
+' ============================================
+' DATA TRANSFER OBJECTS (DTOs)
+' ============================================
+class BidDto {
+    + BidderId: int
+    + BidderName: string?
+    + Amount: decimal
+    + BidTime: DateTime
+}
+
+class BidRequestDto {
+    + BidderId: int
+    + Amount: decimal
+}
+
+class BidResultDto {
+    + AuctionId: int
+    + CurrentBid: decimal
+    + BidCount: int
+    + PlacedBid: BidDto
+}
+
+class BiddingHistoryDto {
+    + BidId: int
+    + AuctionId: int
+    + ItemTitle: string
+    + ItemImages: string?
+    + CategoryName: string?
+    + YourBid: decimal
+    + BidTime: DateTime
+    + Status: string
+    + CurrentBid: decimal?
+    + EndTime: DateTime?
+    + AuctionStatus: string?
+    + IsAutoBid: bool
+}
+
+class PaginatedResultB<T> {
+    + Data: List<T>
+    + TotalCount: int
+    + Page: int
+    + PageSize: int
+}
+
+' ============================================
+' DOMAIN MODELS
+' ============================================
+class Bid {
+    + Id: int
+    + AuctionId: int
+    + BidderId: int
+    + Amount: decimal
+    + BidTime: DateTime?
+    + IsAutoBid: bool?
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+' Controller to Service Interface
+BidController ..> IBidService : depends on
+
+' Service Interface to Service Implementation
+IBidService <|.. BidService : realizes
+
+' Service to Repository Interface
+BidService ..> IBidRepository : depends on
+
+' Repository Interface to Repository Implementation
+IBidRepository <|.. BidRepository : realizes
+
+' Repository to Domain Model
+BidRepository ..> Bid : uses
+
+' Service to DTOs
+BidService ..> BidDto : returns
+BidService ..> BidResultDto : returns
+BidService ..> BidRequestDto : accepts
+BidService ..> BiddingHistoryDto : returns
+BidService ..> PaginatedResultB : returns
+
+' Controller to DTOs
+BidController ..> BidRequestDto : accepts
+BidController ..> BidResultDto : returns
+BidController ..> BidDto : returns
+BidController ..> BiddingHistoryDto : returns
+
+@enduml
+

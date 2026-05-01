@@ -1,0 +1,190 @@
+✅ BIDNOW SYSTEM – RELATIONSHIP DESCRIPTIONS (VERIFIED FROM CODE)
+
+🟦 CORE DOMAIN
+
+Item
+
+Item is listed under Category (many-to-one, FK: CategoryId)
+
+Item is created by User as Seller (many-to-one, FK: SellerId)
+
+Item is associated with multiple Auctions (one-to-many)
+
+Category
+
+Category includes multiple Items (one-to-many)
+
+Auction
+
+Auction is created for an Item (many-to-one, FK: ItemId)
+
+Auction is managed by User as Seller (many-to-one, FK: SellerId)
+
+Auction may be won by User as Winner (many-to-one, FK: WinnerId, nullable)
+
+Auction receives Bids (one-to-many)
+
+Auction receives AutoBids (one-to-many)
+
+Auction contains Messages (one-to-many)
+
+Auction collects Ratings (one-to-many)
+
+Auction is added to Watchlists (one-to-many)
+
+🟩 USER DOMAIN
+
+User
+
+User creates Items (one-to-many, collection: Items)
+
+User hosts Auctions as Seller (one-to-many, collection: AuctionSellers)
+
+User wins Auctions (one-to-many, collection: AuctionWinners)
+
+User places Bids (one-to-many, collection: Bids)
+
+User uses AutoBid rules (one-to-many, collection: AutoBids)
+
+User sends Messages as Sender (one-to-many, collection: MessageSenders)
+
+User receives Messages as Receiver (one-to-many, collection: MessageReceivers)
+
+User receives Notifications (one-to-many, collection: Notifications)
+
+User gives Ratings as Rater (one-to-many, collection: RatingRaters)
+
+User receives Ratings as Rated (one-to-many, collection: RatingRateds)
+
+User is assigned UserRoles (one-to-many, collection: UserRoles)
+
+User maintains a Watchlist (one-to-many, collection: Watchlists)
+
+User marks Favorite Sellers as Buyer (one-to-many, collection: FavoriteSellerBuyers)
+
+User is marked as Favorite by Buyers as Seller (one-to-many, collection: FavoriteSellerSellers)
+
+User submits ContactMessages (one-to-many, collection: ContactMessages)
+
+User performs Searches via SearchKeywords (one-to-many, collection: SearchKeywords)
+
+User makes Orders as Buyer (one-to-many, collection: OrdersAsBuyer)
+
+User receives Orders as Seller (one-to-many, collection: OrdersAsSeller)
+
+User opens Disputes as Buyer (one-to-many, collection: DisputesAsBuyer)
+
+User receives Disputes as Seller (one-to-many, collection: DisputesAsSeller)
+
+User resolves Disputes as Resolver (one-to-many, collection: DisputesResolved)
+
+🟥 BIDDING DOMAIN
+
+Bid
+
+Bid is placed in an Auction (many-to-one, FK: AuctionId)
+
+Bid is made by User as Bidder (many-to-one, FK: BidderId)
+
+AutoBid
+
+AutoBid is configured for an Auction (many-to-one, FK: AuctionId)
+
+AutoBid is owned by User (many-to-one, FK: UserId)
+
+🟨 MESSAGING DOMAIN
+
+Message
+
+Message is sent by User as Sender (many-to-one, FK: SenderId)
+
+Message is received by User as Receiver (many-to-one, FK: ReceiverId)
+
+Message may relate to an Auction (many-to-one, FK: AuctionId, nullable)
+
+🟧 RATING DOMAIN
+
+Rating
+
+Rating belongs to an Auction (many-to-one, FK: AuctionId)
+
+Rating is created by User as Rater (many-to-one, FK: RaterId)
+
+Rating is given to User as Rated (many-to-one, FK: RatedId)
+
+🟩 WATCHLIST DOMAIN
+
+Watchlist
+
+Watchlist belongs to User (many-to-one, FK: UserId)
+
+Watchlist contains Auction (many-to-one, FK: AuctionId)
+
+🟪 FAVORITE SELLERS
+
+FavoriteSeller
+
+FavoriteSeller entry is created by Buyer (many-to-one, FK: BuyerId)
+
+FavoriteSeller entry refers to a Seller (many-to-one, FK: SellerId)
+
+🟦 ORDER & PAYMENT DOMAIN
+
+Order
+
+Order is generated for an Auction (many-to-one, FK: AuctionId, no reverse collection)
+
+Order is placed by Buyer (many-to-one, FK: BuyerId)
+
+Order is fulfilled by Seller (many-to-one, FK: SellerId)
+
+Order includes a Payment (one-to-one, FK: OrderId in Payment)
+
+Order may include a Dispute (one-to-one, FK: OrderId in Dispute, nullable)
+
+Payment
+
+Payment is linked to an Order (one-to-one, FK: OrderId, unique)
+
+🟥 DISPUTE DOMAIN
+
+Dispute
+
+Dispute is tied to an Order (one-to-one, FK: OrderId, unique)
+
+Dispute is filed by Buyer (many-to-one, FK: BuyerId)
+
+Dispute concerns Seller (many-to-one, FK: SellerId)
+
+Dispute is handled by User as Resolver (many-to-one, FK: ResolvedBy, nullable)
+
+🟫 OTHER ENTITIES
+
+ContactMessage
+
+ContactMessage may be sent by a User (many-to-one, FK: UserId, nullable)
+
+SearchKeyword
+
+SearchKeyword is created by User (many-to-one, FK: UserId)
+
+EmailVerification
+
+EmailVerification belongs to User (many-to-one, FK: UserId, no reverse collection in User)
+
+UserAuctionView
+
+UserAuctionView records a User viewing an Auction (many-to-one, FK: UserId and AuctionId, no reverse collections)
+
+UserRole
+
+UserRole belongs to User (many-to-one, FK: UserId)
+
+Notification
+
+Notification is sent to User (many-to-one, FK: UserId)
+
+AuctionHistory
+
+AuctionHistory logs completed Auctions (no FK relationships defined, contains AuctionId, ItemId, CategoryId, SellerId, WinnerId as data fields only)
+

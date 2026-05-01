@@ -1,0 +1,68 @@
+@startuml Backend Package Diagram
+
+!define CONTROLLER_COLOR #E1F5FE
+!define SERVICE_COLOR #F3E5F5
+!define REPOSITORY_COLOR #FFF3E0
+!define MODEL_COLOR #E8F5E9
+!define DTO_COLOR #FCE4EC
+!define HUB_COLOR #E0F2F1
+!define PAYMENT_COLOR #FFF9C4
+
+skinparam packageStyle rectangle
+
+title Backend Package Diagram - BitNow Backend Architecture (Compact)
+
+' ========================== API LAYER ==============================
+package "BitNow-Backend.API" as API {
+    package "Controllers" as Controllers <<CONTROLLER_COLOR>>
+    package "RealTime" as RealTime <<HUB_COLOR>>
+    package "Services" as APIServices
+    package "Helpers"
+    package "Properties"
+}
+
+' ========================== BLL LAYER ==============================
+package "BitNow-Backend.BLL" as BLL {
+    package "IServices" as IServices <<SERVICE_COLOR>>
+    package "Services" as Services <<SERVICE_COLOR>>
+    package "Payment" as Payment <<PAYMENT_COLOR>>
+}
+
+' ========================== DAL LAYER ==============================
+package "BitNow-Backend.DAL" as DAL {
+    package "Models" as Models <<MODEL_COLOR>>
+    package "IRepositories" as IRepositories <<REPOSITORY_COLOR>>
+    package "Repositories" as Repositories <<REPOSITORY_COLOR>>
+    package "DTOs" as DTOs <<DTO_COLOR>>
+    package "Migrations"
+}
+
+' ======================= DEPENDENCY RULES ============================
+
+' API Layer
+API.Controllers --> BLL.IServices : uses
+API.Controllers --> BLL.Services : uses
+API.Controllers --> DAL.DTOs : uses
+API.Controllers --> API.RealTime : uses\n(SignalR hubs)
+API.Controllers --> API.Helpers : uses\n(RoleHelper)
+
+API.Helpers --> DAL : uses\n(BidNowDbContext)
+
+API.RealTime --> BLL.Services : uses
+API.RealTime --> BLL.IServices : uses
+
+API.Services --> BLL.Services : uses
+
+' BLL Layer
+BLL.Services ..> BLL.IServices : implements
+BLL.Services --> DAL.IRepositories : uses
+BLL.Services --> DAL.DTOs : uses
+BLL.Services --> BLL.Payment : uses
+
+BLL.Payment ..> "Payment Interfaces" : implements
+
+' DAL Layer
+DAL.Repositories ..> DAL.IRepositories : implements
+DAL.Repositories --> DAL.Models : uses
+
+@enduml

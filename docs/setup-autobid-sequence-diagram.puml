@@ -1,0 +1,141 @@
+@startuml Setup Auto Bid Sequence Diagram
+
+title Setup Auto Bid - Sequence Diagram
+
+actor Client
+participant "AuctionView" as View
+participant "AutoBidController" as Controller
+participant "AutoBidService" as Service
+participant "AutoBidRepository" as Repository
+participant "CreateAutoBidDto" as RequestDTO
+participant "AutoBid" as AutoBidEntity
+participant "AutoBidDto" as ResultDTO
+database "BidNowDbContext" as DbContext
+database "Database" as Database
+
+Client -> View: User enters max amount\nand clicks "Setup Auto Bid"
+activate View
+
+View -> View: Create CreateAutoBidDto\n(auctionId, userId, maxAmount)
+
+View -> Controller: POST /api/autobids\n(CreateAutoBidDto)
+activate Controller
+deactivate View
+
+alt Invalid request (dto == null OR maxAmount <= 0)
+    Controller --> View: BadRequest\n("Invalid request")
+    activate View
+    deactivate Controller
+    View -> View: Display error message\n"Invalid request"
+    View --> Client: Show error notification
+    deactivate View
+else Valid request
+    Controller -> Service: CreateOrUpdateAutoBidAsync\n(auctionId, userId, maxAmount)
+    activate Service
+    
+    Service -> DbContext: FindAsync(Auctions)\nWhere Id == auctionId
+    activate DbContext
+    DbContext -> Database: SELECT * FROM Auctions\nWHERE Id = @auctionId
+    activate Database
+    Database --> DbContext: Auction data
+    deactivate Database
+    DbContext --> Service: Auction entity
+    deactivate DbContext
+    
+    alt Auction not found
+        Service --> Controller: throw InvalidOperationException\n("Auction not found")
+        Controller --> View: BadRequest\n(error message)
+        activate View
+        deactivate Service
+        deactivate Controller
+        View -> View: Display error message\n"Auction not found"
+        View --> Client: Show error notification
+        deactivate View
+    else Auction status != "active"
+        Service --> Controller: throw InvalidOperationException\n("Auction not active")
+        Controller --> View: BadRequest\n(error message)
+        activate View
+        deactivate Service
+        deactivate Controller
+        View -> View: Display error message\n"Auction not active"
+        View --> Client: Show error notification
+        deactivate View
+    else maxAmount <= currentBid
+        Service --> Controller: throw InvalidOperationException\n("Max amount must be higher than current bid")
+        Controller --> View: BadRequest\n(error message)
+        activate View
+        deactivate Service
+        deactivate Controller
+        View -> View: Display error message\n"Max amount must be higher than current bid"
+        View --> Client: Show error notification
+        deactivate View
+    else Valid auto bid setup
+        Service -> AutoBidEntity: new AutoBid()\n(auctionId, userId, maxAmount, IsActive=true, CreatedAt)
+        activate AutoBidEntity
+        deactivate AutoBidEntity
+        
+        Service -> Repository: CreateOrUpdateAsync(autoBid)
+        activate Repository
+        
+        Repository -> DbContext: GetByAuctionAndUserAsync\n(auctionId, userId)
+        activate DbContext
+        DbContext -> Database: SELECT * FROM AutoBids\nWHERE AuctionId = @auctionId\nAND UserId = @userId
+        activate Database
+        Database --> DbContext: AutoBid data (if exists)
+        deactivate Database
+        DbContext --> Repository: AutoBid entity (or null)
+        deactivate DbContext
+        
+        alt AutoBid exists
+            Repository -> DbContext: AutoBids.Update(existing)\nSet MaxAmount = maxAmount\nSet IsActive = true\nSet CreatedAt = DateTime.Now
+            activate DbContext
+            DbContext -> Database: UPDATE AutoBids\nSET MaxAmount = @maxAmount,\n    IsActive = true,\n    CreatedAt = @createdAt\nWHERE Id = @id
+            activate Database
+            Database --> DbContext: AutoBid updated
+            deactivate Database
+            DbContext --> Repository: AutoBid updated
+            deactivate DbContext
+        else AutoBid does not exist
+            Repository -> DbContext: AutoBids.Add(autoBid)
+            activate DbContext
+            DbContext -> Database: INSERT INTO AutoBids\n(AuctionId, UserId, MaxAmount, IsActive, CreatedAt)
+            activate Database
+            Database --> DbContext: AutoBid inserted
+            deactivate Database
+            DbContext --> Repository: AutoBid added
+            deactivate DbContext
+        end
+        
+        Repository -> DbContext: SaveChangesAsync()
+        activate DbContext
+        DbContext -> Database: COMMIT TRANSACTION
+        activate Database
+        Database --> DbContext: Changes saved
+        deactivate Database
+        DbContext --> Repository: SaveChanges completed
+        deactivate DbContext
+        
+        Repository --> Service: AutoBid entity (with Id)
+        deactivate Repository
+        
+        Service -> ResultDTO: new AutoBidDto()\n(id, auctionId, userId, maxAmount, isActive, createdAt)
+        activate ResultDTO
+        deactivate ResultDTO
+        
+        Service --> Controller: AutoBidDto
+        deactivate Service
+        
+        Controller --> View: Ok(AutoBidDto)
+        activate View
+        deactivate Controller
+        
+        View -> View: Update UI with auto bid info\n(maxAmount, isActive status)
+        View -> View: Display success message\n"Auto bid setup successfully"
+        
+        View --> Client: Show updated auction view\nwith auto bid configuration
+        deactivate View
+    end
+end
+
+@enduml
+

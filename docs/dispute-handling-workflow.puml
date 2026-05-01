@@ -1,0 +1,112 @@
+@startuml Dispute Handling Workflow - Activity Diagram
+
+title Dispute Handling Workflow - Activity Diagram
+
+|#LightBlue|**Buyer**|
+start
+:Issue with order received;
+
+:Report issue with reason and description;
+
+|#LightGreen|**System**|
+:Validate order exists and buyer owns order;
+
+if (Order valid?) then (No)
+  |#LightBlue|**Buyer**|
+  :Return error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Create dispute with status pending;
+
+:Update order status to dispute;
+
+:Notify seller about dispute;
+
+:Notify all admins about new dispute;
+
+|#LightYellow|**Admin**|
+:Admin views dispute list;
+
+:Admin selects dispute to review;
+
+:Admin starts review process;
+
+|#LightGreen|**System**|
+:Update dispute status to in_review;
+
+:Notify buyer and seller dispute is under review;
+
+partition "Communication" {
+  |#LightBlue|**Buyer**|
+  :Buyer sends messages in dispute chat;
+  
+  |#LightYellow|**Admin**|
+  :Admin responds in dispute chat;
+  
+  |#LightCoral|**Seller**|
+  :Seller responds in dispute chat;
+}
+
+|#LightYellow|**Admin**|
+:Admin reviews evidence and messages;
+
+:Admin decides resolution:
+- Buyer wins OR
+- Seller wins;
+
+:Admin adds resolution notes;
+
+|#LightGreen|**System**|
+if (Winner?) then (Buyer)
+  :Update dispute status to buyer_won;
+  
+  :Set resolution to refunded_to_buyer;
+  
+  :Refund payment to buyer;
+  
+  |#LightBlue|**Buyer**|
+  :Buyer receives refund notification;
+  stop
+  
+else (Seller)
+  :Update dispute status to seller_won;
+  
+  :Set resolution to released_to_seller;
+  
+  :Release payment to seller;
+  
+  |#LightCoral|**Seller**|
+  :Seller receives payment release notification;
+  stop
+endif
+
+|#LightGreen|**System**|
+:Notify both buyer and seller about resolution;
+
+:Update dispute status to resolved;
+
+stop
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

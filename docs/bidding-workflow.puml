@@ -1,0 +1,79 @@
+@startuml Bidding Workflow - Activity Diagram
+
+title Bidding Workflow - Activity Diagram
+
+|#LightBlue|**Buyer**|
+start
+:View auction details;
+
+:Enter bid amount;
+
+:Submit bid request;
+
+|#LightGreen|**System**|
+:Validate auction exists;
+
+if (Auction found?) then (No)
+  |#LightBlue|**Buyer**|
+  :Return error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Check auction status is active;
+
+if (Auction active?) then (No)
+  |#LightBlue|**Buyer**|
+  :Return "Auction not active";
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Check auction end time;
+
+if (Auction ended?) then (Yes)
+  |#LightBlue|**Buyer**|
+  :Return "Auction ended";
+  stop
+else (No)
+endif
+
+|#LightGreen|**System**|
+:Validate bid amount:
+amount > current bid
+AND amount >= starting bid;
+
+if (Bid valid?) then (No)
+  |#LightBlue|**Buyer**|
+  :Return "Bid too low";
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Create bid record in database;
+
+:Update auction:
+- Set current bid = bid amount
+- Increment bid count;
+
+:Get bidder name;
+
+:Cache bid in Redis:
+- Add to bid history
+- Update highest bid;
+
+:Broadcast bid via SignalR
+to all connected clients;
+
+:Process auto bids
+(if any other buyers have auto bid);
+
+|#LightBlue|**Buyer**|
+:Bid placed successfully;
+stop
+
+@enduml
+

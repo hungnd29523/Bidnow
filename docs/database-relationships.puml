@@ -1,0 +1,94 @@
+@startuml Database Relationships
+
+title Database Relationships - BidNow System
+
+' Core Entity Relationships
+Item has Category (many-to-one)
+Item has User as Seller (many-to-one)
+Item has Auctions (one-to-many)
+
+Category has Items (one-to-many)
+
+Auction has Item (many-to-one)
+Auction has User as Seller (many-to-one)
+Auction has User as Winner (many-to-one, nullable)
+Auction has Bids (one-to-many)
+Auction has AutoBids (one-to-many)
+Auction has Messages (one-to-many)
+Auction has Ratings (one-to-many)
+Auction has Watchlists (one-to-many)
+
+' User Relationships
+User has Items (one-to-many)
+User has Auctions as Seller (one-to-many)
+User has Auctions as Winner (one-to-many)
+User has Bids (one-to-many)
+User has AutoBids (one-to-many)
+User has Messages as Sender (one-to-many)
+User has Messages as Receiver (one-to-many)
+User has Notifications (one-to-many)
+User has Ratings as Rater (one-to-many)
+User has Ratings as Rated (one-to-many)
+User has UserRoles (one-to-many)
+User has Watchlists (one-to-many)
+User has FavoriteSellers as Buyer (one-to-many)
+User has FavoriteSellers as Seller (one-to-many)
+User has ContactMessages (one-to-many)
+User has SearchKeywords (one-to-many)
+User has Orders as Buyer (one-to-many)
+User has Orders as Seller (one-to-many)
+User has Disputes as Buyer (one-to-many)
+User has Disputes as Seller (one-to-many)
+User has Disputes as Resolver (one-to-many)
+User has EmailVerifications (one-to-many)
+
+' Bid Relationships
+Bid has Auction (many-to-one)
+Bid has User as Bidder (many-to-one)
+
+AutoBid has Auction (many-to-one)
+AutoBid has User (many-to-one)
+
+' Message Relationships
+Message has User as Sender (many-to-one)
+Message has User as Receiver (many-to-one)
+Message has Auction (many-to-one, nullable)
+
+' Rating Relationships
+Rating has Auction (many-to-one)
+Rating has User as Rater (many-to-one)
+Rating has User as Rated (many-to-one)
+
+' Watchlist Relationships
+Watchlist has User (many-to-one)
+Watchlist has Auction (many-to-one)
+
+' FavoriteSeller Relationships
+FavoriteSeller has User as Buyer (many-to-one)
+FavoriteSeller has User as Seller (many-to-one)
+
+' Order Relationships
+Order has Auction (many-to-one)
+Order has User as Buyer (many-to-one)
+Order has User as Seller (many-to-one)
+Order has Payment (one-to-one)
+Order has Dispute (one-to-one, nullable)
+
+' Payment Relationships
+Payment has Order (many-to-one, one-to-one)
+
+' Dispute Relationships
+Dispute has Order (many-to-one, one-to-one)
+Dispute has User as Buyer (many-to-one)
+Dispute has User as Seller (many-to-one)
+Dispute has User as Resolver (many-to-one, nullable)
+
+' Other Relationships
+ContactMessage has User (many-to-one, nullable)
+SearchKeyword has User (many-to-one)
+EmailVerification has User (many-to-one)
+UserAuctionView has User (many-to-one)
+UserAuctionView has Auction (many-to-one)
+
+@enduml
+

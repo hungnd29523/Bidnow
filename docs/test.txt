@@ -1,0 +1,577 @@
+1. Scope of Testing
+
+1.1 Target of Test
+
+The target system is an online auction platform (BidNow) for buying and selling products through auction mechanism. The functional testing focuses on verifying that each feature operates correctly as described in the Business Rules Documentation:
+
+● User Authentication & Authorization (Register, Login, Email Verification, Password Reset, Role Management)
+● Product/Item Management (Create, Edit, Delete, Approve/Reject, Draft Management)
+● Auction Management (Create Auction, Place Bid, Auto-Bid, Buy Now, Auction Status Management)
+● Order & Payment Processing (Order Creation, Payment Link Generation, Payment Webhook Handling, Shipping Info Update, Order Confirmation)
+● Dispute Resolution (Create Dispute, Handle Dispute, Dispute Chat)
+● Messaging System (Send Message, Get Conversations, Mark as Read, Auction Chat)
+● Notifications (Create, Get, Mark as Read, Real-time Notifications)
+● Ratings & Feedback (Create Rating, Get Ratings for User/Auction)
+● Watchlist & Favorites (Add/Remove Watchlist, Add/Remove Favorite Sellers)
+● Search & Filter (Search Items, Filter Auctions, Category-based Search)
+● Admin Dashboard (Product Approval, Auction Management, User Management, Statistics)
+● Real-time Features (SignalR for Live Bidding, Real-time Price Updates, Live Chat)
+● AI Recommendation System (Personalized auction recommendations based on user behavior, bidding history, watchlist, search keywords)
+
+Out of scope:
+● Third-party services' internal logic (PayOS Payment Gateway, Email Service, File Upload Service) – only integration responses are tested.
+● Cross-browser UI compatibility (tested on Chrome only).
+● Performance testing under extreme load conditions.
+● Security penetration testing (handled separately).
+
+1.2 Test Levels
+
+| No | Test level | Description | In charge | Tool | Acceptance Criteria |
+|----|------------|-------------|-----------|------|-------------------|
+| 1 | Unit Test | Verify the accuracy of each method and supporting service. Simple functions are tested using black-box techniques, while functions containing complex logic are tested using white-box techniques (branch testing/conditional testing). | Developer | Manual, xUnit, Moq, FluentAssertions | All unit tests pass; overall pass rate 100% |
+| 2 | Integration Test | Verify that different modules/components work together correctly. Test API endpoints integration, database operations, and external service integrations (PayOS, Email, SignalR). | QA Team & Development Team | xUnit, HttpClient, Test Database | All API endpoints respond correctly with proper status codes; database operations work correctly; external service integrations handle success and failure scenarios |
+| 3 | System Test | Validate end-to-end user workflows and complete business scenarios from user perspective. Test complete user journeys and business rule validation. | QA Team | Postman, Browser Testing (Chrome), Manual Testing | Complete user journeys work correctly; all business rules are validated and enforced correctly; system handles concurrent users correctly |
+| 4 | Acceptance Test | Validate that the system meets user requirements and is ready for production deployment from stakeholder perspective. | QA Team & Stakeholders | Manual Testing, UAT | All acceptance criteria are met; stakeholders approve system for production deployment |
+| 5 | AI Test | Verify AI recommendation system returns accurate and relevant results based on user behavior (bidding history, watchlist, search keywords, viewed auctions). Test recommendation accuracy, relevance, and fallback behavior for new users. | QA Team & Development Team | Manual Testing, API Testing, Pinecone Query Validation | AI recommendations are relevant to user interests; recommendations only show active auctions; similarity scores are accurate; fallback works for new users |
+
+1.3 Test Assumptions
+
+The following assumptions are made for test process:
+
+● Stable internet connection and server availability during testing.
+● Test data prepared in advance for all roles (Buyer, Seller, Admin, Staff).
+● Payment gateway (PayOS) sandbox environment available.
+● Email service sandbox/test environment available.
+● SQL Server database available for testing.
+● SignalR real-time connection available for testing.
+
+1.4 Environment Requirements
+
+List environment requires in this system:
+
+1. Server
+   - Backend: ASP.NET Core 8.0 Web API
+   - Frontend: Next.js 15.2.4
+   - .NET SDK 8.0 or higher
+   - Node.js 18.x or higher
+
+2. Database
+   - SQL Server 2019 or higher
+   - Entity Framework Core 8.0
+
+3. Web Browser
+   - Google Chrome (primary testing browser)
+   - WebSocket support for SignalR
+
+4. External Services
+   - PayOS Payment Gateway (sandbox environment)
+   - SMTP Email Service
+   - Redis Server (optional, for caching)
+   - SignalR for real-time features
+
+2. Test Strategy
+
+2.1 Testing Types
+
+2.1.1 White-box Testing
+- Objective: Verify individual units (controllers, services) work correctly in isolation
+- Technique: White-box testing with mocked dependencies using Moq framework, boundary value and equivalence class testing
+- Completion Criteria: 82 unit tests implemented covering 8 controllers (AuthController, AuctionsController, CategoriesController, MessagesController, AdminAuctionsController, AdminStatsController, AuctionMessagesController, UsersController). All tests pass consistently.
+
+2.1.2 Functional Testing
+- Objective: Verify functional requirements are implemented correctly through unit tests
+- Technique: Black-box testing approach via unit tests, testing valid/invalid inputs, edge cases, exception scenarios
+- Completion Criteria: Critical business logic methods tested, edge cases and exception scenarios covered, test cases follow AAA pattern (Arrange-Act-Assert).
+
+2.1.3 Regression Testing
+- Objective: Ensure new changes do not break existing functionality
+- Technique: Automated test suite execution via dotnet test command after code changes
+- Completion Criteria: All 82 existing test cases pass after code changes, no new defects introduced.
+
+2.1.4 Acceptance Testing
+- Objective: Validate that the system meets user requirements and is ready for production deployment
+- Technique: User Acceptance Testing (UAT) with real users, business scenario validation, production readiness testing
+- Completion Criteria: All acceptance criteria are met, stakeholders approve system for production deployment, critical business workflows validated in production-like environment.
+
+2.2 Test Levels
+
+| Type of Tests        | Unit | Integration | System | Acceptance |
+|----------------------|------|-------------|--------|------------|
+| Unit Testing         | X    |             |        |            |
+| Functional Testing   | X    |             | X      | X          |
+| Regression Testing   | X    |             |        |            |
+| Acceptance Testing   |      |             |        | X          |
+
+2.3 Supporting Tools
+
+| Purpose              | Tool                              | Vendor/In-house | Version        |
+|----------------------|-----------------------------------|-----------------|----------------|
+| Unit Test Framework  | xUnit                             | Open Source     | 2.9.2          |
+| Mocking Framework    | Moq                               | Open Source     | 4.20.72        |
+| EF Core Mocking      | Moq.EntityFrameworkCore            | Open Source     | 8.0.1.1        |
+| Assertion Library    | FluentAssertions                  | Open Source     | 8.8.0          |
+| ASP.NET Core Testing | Microsoft.AspNetCore.Mvc.Testing  | Microsoft       | 8.0.0          |
+| Code Coverage        | coverlet.collector                | Open Source     | 6.0.2          |
+| Test Execution       | dotnet CLI                        | Microsoft       | 8.0            |
+| Test Explorer        | Visual Studio Test Explorer       | Microsoft       | Built-in       |
+| Version Control      | Git                               | Open Source     | Latest         |
+
+4. Test Cases
+
+4.1 Unit Test Cases
+
+Focuses on validating individual units (controllers, services, methods) in isolation with mocked dependencies.
+
+Test Basis
+- Business Rules Documentation
+- Controller method specifications
+- Service interface contracts
+- Exception handling requirements
+
+Techniques
+- White-box testing: Test internal logic and code paths
+- Mocking: Use Moq framework to isolate dependencies
+- Boundary value testing: Test input boundaries and edge cases
+- Equivalence class testing: Group similar inputs for testing
+- Exception testing: Verify error handling scenarios
+
+Objectives
+- Ensure individual methods return correct results for valid inputs
+- Validate error handling for invalid inputs and edge cases
+- Confirm business logic implementation matches requirements
+- Verify proper use of dependencies through mocks
+
+Output
+Unit Test Excel, organized by controller (AuthController, AuctionsController, CategoriesController, MessagesController, AdminAuctionsController, AdminStatsController, AuctionMessagesController, UsersController). Total: 82 test cases.
+
+4.2 Integration Test Cases
+
+Focuses on validating the interaction between multiple modules and ensuring that data flows correctly across the system layers.
+
+Test Basis
+- SRS – Software Requirement Specification
+- Database schema & data flow
+- Business Rules
+- API endpoint specifications
+
+Techniques
+- Functional Testing (Black-box): Validate integration between FE requests and BE responses
+- Data-flow testing: Ensure data created in one module is propagated to the next
+- Interface testing: Validate communication between internal modules and external services (e.g., PayOS, Email Service, SignalR)
+
+Objectives
+- Ensure that connected modules operate correctly together
+- Validate database updates across integrated components
+- Confirm consistent role-based behavior across modules
+- Verify external service integrations (PayOS webhook, Email notifications, SignalR real-time updates)
+
+Output
+Integration Test Excel, organized by module interactions (Authentication ↔ Database, Auction ↔ Payment, Order ↔ Notification, SignalR ↔ Auction Updates, etc.).
+
+4.3 System Test Cases
+
+Focuses on validating end-to-end user workflows and complete business scenarios from user perspective.
+
+Test Basis
+- User stories and use cases
+- Business Rules Documentation
+- Complete workflow specifications
+- User acceptance criteria
+
+Techniques
+- End-to-end testing: Complete user journeys from start to finish
+- Scenario-based testing: Test real-world user scenarios
+- Business rule validation: Verify all business rules are enforced correctly
+- Workflow testing: Validate complete processes (register → create product → create auction → bid → payment → order completion)
+
+Objectives
+- Ensure complete user journeys work correctly end-to-end
+- Validate all business rules are enforced across the system
+- Confirm system handles concurrent users and real-time updates correctly
+- Verify error handling and edge cases in complete workflows
+
+Output
+System Test Excel, organized by user workflows (Buyer Journey, Seller Journey, Admin Workflows, Payment Flow, Dispute Resolution Flow, etc.).
+
+4.4 Acceptance Test Cases
+
+Focuses on validating that the system meets user requirements and is ready for production deployment from stakeholder perspective.
+
+Test Basis
+- User requirements and acceptance criteria
+- Business Rules Documentation
+- Stakeholder expectations
+- Production readiness checklist
+
+Techniques
+- User Acceptance Testing (UAT): Real users test the system in production-like environment
+- Business scenario validation: Verify system meets business objectives
+- Usability testing: Ensure system is intuitive and user-friendly
+- Production readiness testing: Validate system is ready for live deployment
+
+Objectives
+- Confirm system meets all user requirements and acceptance criteria
+- Validate system is ready for production deployment
+- Ensure user experience meets stakeholder expectations
+- Verify all critical business workflows function correctly in production-like environment
+
+Output
+Acceptance Test Excel, organized by user roles and acceptance criteria (Buyer Acceptance Tests, Seller Acceptance Tests, Admin Acceptance Tests, Payment Acceptance Tests, etc.).
+
+4.5 AI Test Cases
+
+Object
+Focuses on validating AI recommendation system accuracy, relevance, and correctness of returned results.
+
+Test Basis
+- AI Recommendation Service specifications
+- Vector similarity search requirements
+- User behavior data (bidding history, watchlist, search keywords, viewed auctions)
+- Pinecone vector database integration
+
+Techniques
+- Functional Testing (Black-box): Test AI recommendation API endpoints and validate returned results
+- Accuracy testing: Verify recommendations match user interests based on historical data
+- Relevance testing: Validate similarity scores and ranking of recommended auctions
+- Fallback testing: Test behavior for new users without history
+- Data validation: Ensure recommendations only include active auctions
+
+Objectives
+- Ensure AI recommendations are relevant to user interests based on bidding history, watchlist, search keywords, and viewed auctions
+- Validate that recommendations only show active or scheduled auctions with valid end times
+- Confirm similarity scores are calculated correctly and results are sorted appropriately
+- Verify fallback mechanism works correctly for new users without activity history
+- Test recommendation result count limits (default 4, maximum 24)
+
+Output
+AI Test Excel, organized by test scenarios (User with History, New User Fallback, Bidding History Based, Watchlist Based, Active Auctions Filter, Result Count Validation). AI recommendations are relevant to user interests; recommendations only show active auctions; similarity scores are accurate; fallback works for new users.
+
+5. System Test Cases - Admin Role
+
+Brief description about requirements which are tested in this sheet:
+This sheet covers system test cases for Admin role, focusing on administrative functions including user management (activate/deactivate accounts, change roles), product approval/rejection, auction management (pause/resume/cancel), category management (create/update/delete), and viewing platform statistics. All test cases validate that admin can perform administrative tasks correctly and system enforces proper authorization.
+
+5.1 Manage Users
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-ADM-001 | Test View All Users | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Admin Dashboard<br>4. Click "Quản lý người dùng" (User Management) tab | The user list screen is displayed with all users and their information (email, role, status) | Device is connected to internet, admin account is valid and active |
+| ST-ADM-002 | Test Activate User Account | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to User Management<br>4. Find a user with status "Chưa kích hoạt" (Not activated)<br>5. Click "Kích hoạt" (Activate) button<br>6. Choose "Đồng ý" (Agree) when prompted | The user status changes to "Đã kích hoạt" (Activated) and user can login | Device is connected to internet, admin account is valid, user account exists with inactive status |
+| ST-ADM-003 | Test Deactivate User Account | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to User Management<br>4. Find a user with status "Đã kích hoạt" (Activated)<br>5. Click "Vô hiệu hóa" (Deactivate) button<br>6. Choose "Đồng ý" (Agree) when prompted with "Bạn có chắc muốn vô hiệu hóa tài khoản này?" | The user status changes to "Chưa kích hoạt" (Not activated) and user cannot login | Device is connected to internet, admin account is valid, user account exists with active status |
+| ST-ADM-004 | Test Change User Role | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to User Management<br>4. Select a user<br>5. Click "Thay đổi vai trò" (Change Role)<br>6. Select new role (buyer/seller/staff)<br>7. Click "Lưu" (Save) | The user role is updated successfully and displayed in user list | Device is connected to internet, admin account is valid, user account exists |
+
+5.2 Manage Pending Products
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-ADM-005 | Test View Pending Products | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Admin Dashboard<br>4. Click "Chờ duyệt" (Pending) tab | The pending products list screen is displayed with all products waiting for approval | Device is connected to internet, admin account is valid, at least one product with "pending" status exists |
+| ST-ADM-006 | Test Approve Product | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Pending Products<br>4. Select a pending product<br>5. Click "Phê duyệt" (Approve) button<br>6. Choose "Đồng ý" (Agree) when prompted | Product status changes to "approved", seller receives notification, product can be used to create auction | Device is connected to internet, admin account is valid, product exists with "pending" status |
+| ST-ADM-007 | Test Reject Product | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Pending Products<br>4. Select a pending product<br>5. Click "Từ chối" (Reject) button<br>6. Enter rejection reason<br>7. Click "Xác nhận" (Confirm) | Product status changes to "rejected", seller receives notification with reason, product cannot be used to create auction | Device is connected to internet, admin account is valid, product exists with "pending" status |
+
+5.3 Manage Auctions
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-ADM-008 | Test View All Auctions | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Admin Dashboard<br>4. Click "Sản phẩm" (Auctions) tab | The auctions list screen is displayed with all auctions and their status (active, paused, completed, cancelled) | Device is connected to internet, admin account is valid |
+| ST-ADM-009 | Test Pause Auction | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Auctions Management<br>4. Find an auction with status "active"<br>5. Click "Tạm dừng" (Pause) button<br>6. Choose "Đồng ý" (Agree) when prompted | Auction status changes to "paused", PausedAt timestamp is set, users cannot place bids | Device is connected to internet, admin account is valid, auction exists with "active" status |
+| ST-ADM-010 | Test Resume Auction | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Auctions Management<br>4. Find an auction with status "paused"<br>5. Click "Tiếp tục" (Resume) button<br>6. Choose "Đồng ý" (Agree) when prompted | Auction status changes back to "active", users can place bids again | Device is connected to internet, admin account is valid, auction exists with "paused" status and EndTime has not passed |
+| ST-ADM-011 | Test Cancel Auction | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Auctions Management<br>4. Select an auction<br>5. Click "Hủy" (Cancel) button<br>6. Enter cancellation reason<br>7. Click "Xác nhận" (Confirm) | Auction status changes to "cancelled", users cannot place bids, notification sent to participants | Device is connected to internet, admin account is valid, auction exists |
+
+5.4 Manage Categories
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-ADM-012 | Test View All Categories | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Admin Dashboard<br>4. Click "Danh mục" (Categories) tab | The categories list screen is displayed with all categories | Device is connected to internet, admin account is valid |
+| ST-ADM-013 | Test Create Category | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Categories Management<br>4. Click "Thêm danh mục" (Add Category)<br>5. Enter category name and slug<br>6. Click "Lưu" (Save) | New category is created and displayed in categories list | Device is connected to internet, admin account is valid, category name and slug are unique |
+| ST-ADM-014 | Test Update Category | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Categories Management<br>4. Select a category<br>5. Click "Chỉnh sửa" (Edit)<br>6. Update category information<br>7. Click "Lưu" (Save) | Category information is updated successfully | Device is connected to internet, admin account is valid, category exists |
+| ST-ADM-015 | Test Delete Category | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Categories Management<br>4. Select a category that is not in use<br>5. Click "Xóa" (Delete)<br>6. Choose "Đồng ý" (Agree) when prompted | Category is deleted from the list | Device is connected to internet, admin account is valid, category exists and is not used by any products |
+
+5.5 View Statistics
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-ADM-016 | Test View Admin Statistics | 1. Open the web application<br>2. Login with an admin account<br>3. Navigate to Admin Dashboard<br>4. View statistics section | Statistics dashboard displays: total users, new users this week, active auctions, pending items, disputes processing | Device is connected to internet, admin account is valid |
+
+6. System Test Cases - Staff Role
+
+Brief description about requirements which are tested in this sheet:
+This sheet covers system test cases for Staff role, focusing on operational functions including user management (activate/deactivate accounts, change roles between buyer/seller/staff), product approval/rejection, auction management (pause/resume/cancel), category management, dispute resolution (favor buyer or seller), and incident report handling. All test cases validate that staff can perform operational tasks correctly within their permissions.
+
+6.1 Manage Users
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-STAFF-001 | Test View All Users | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Admin Dashboard<br>4. Click "Quản lý người dùng" (User Management) tab | The user list screen is displayed with all users and their information (email, role, status) | Device is connected to internet, staff account is valid and active |
+| ST-STAFF-002 | Test Activate User Account | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to User Management<br>4. Find a user with status "Chưa kích hoạt" (Not activated)<br>5. Click "Kích hoạt" (Activate) button<br>6. Choose "Đồng ý" (Agree) when prompted | The user status changes to "Đã kích hoạt" (Activated) and user can login | Device is connected to internet, staff account is valid, user account exists with inactive status |
+| ST-STAFF-003 | Test Deactivate User Account | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to User Management<br>4. Find a user with status "Đã kích hoạt" (Activated)<br>5. Click "Vô hiệu hóa" (Deactivate) button<br>6. Choose "Đồng ý" (Agree) when prompted with "Bạn có chắc muốn vô hiệu hóa tài khoản này?" | The user status changes to "Chưa kích hoạt" (Not activated) and user cannot login | Device is connected to internet, staff account is valid, user account exists with active status |
+| ST-STAFF-004 | Test Change User Role | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to User Management<br>4. Select a user<br>5. Click "Thay đổi vai trò" (Change Role)<br>6. Select new role (buyer/seller/staff)<br>7. Click "Lưu" (Save) | The user role is updated successfully and displayed in user list | Device is connected to internet, staff account is valid, user account exists |
+
+6.2 Manage Pending Products
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-STAFF-005 | Test View Pending Products | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Admin Dashboard<br>4. Click "Chờ duyệt" (Pending) tab | The pending products list screen is displayed with all products waiting for approval | Device is connected to internet, staff account is valid, at least one product with "pending" status exists |
+| ST-STAFF-006 | Test Approve Product | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Pending Products<br>4. Select a pending product<br>5. Click "Phê duyệt" (Approve) button<br>6. Choose "Đồng ý" (Agree) when prompted | Product status changes to "approved", seller receives notification, product can be used to create auction | Device is connected to internet, staff account is valid, product exists with "pending" status |
+| ST-STAFF-007 | Test Reject Product | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Pending Products<br>4. Select a pending product<br>5. Click "Từ chối" (Reject) button<br>6. Enter rejection reason<br>7. Click "Xác nhận" (Confirm) | Product status changes to "rejected", seller receives notification with reason, product cannot be used to create auction | Device is connected to internet, staff account is valid, product exists with "pending" status |
+
+6.3 Manage Auctions
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-STAFF-008 | Test View All Auctions | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Admin Dashboard<br>4. Click "Sản phẩm" (Auctions) tab | The auctions list screen is displayed with all auctions and their status (active, paused, completed, cancelled) | Device is connected to internet, staff account is valid |
+| ST-STAFF-009 | Test Pause Auction | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Auctions Management<br>4. Find an auction with status "active"<br>5. Click "Tạm dừng" (Pause) button<br>6. Choose "Đồng ý" (Agree) when prompted | Auction status changes to "paused", PausedAt timestamp is set, users cannot place bids | Device is connected to internet, staff account is valid, auction exists with "active" status |
+| ST-STAFF-010 | Test Resume Auction | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Auctions Management<br>4. Find an auction with status "paused"<br>5. Click "Tiếp tục" (Resume) button<br>6. Choose "Đồng ý" (Agree) when prompted | Auction status changes back to "active", users can place bids again | Device is connected to internet, staff account is valid, auction exists with "paused" status and EndTime has not passed |
+| ST-STAFF-011 | Test Cancel Auction | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Auctions Management<br>4. Select an auction<br>5. Click "Hủy" (Cancel) button<br>6. Enter cancellation reason<br>7. Click "Xác nhận" (Confirm) | Auction status changes to "cancelled", users cannot place bids, notification sent to participants | Device is connected to internet, staff account is valid, auction exists |
+
+6.4 Manage Categories
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-STAFF-012 | Test View All Categories | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Admin Dashboard<br>4. Click "Danh mục" (Categories) tab | The categories list screen is displayed with all categories | Device is connected to internet, staff account is valid |
+| ST-STAFF-013 | Test Create Category | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Categories Management<br>4. Click "Thêm danh mục" (Add Category)<br>5. Enter category name and slug<br>6. Click "Lưu" (Save) | New category is created and displayed in categories list | Device is connected to internet, staff account is valid, category name and slug are unique |
+| ST-STAFF-014 | Test Update Category | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Categories Management<br>4. Select a category<br>5. Click "Chỉnh sửa" (Edit)<br>6. Update category information<br>7. Click "Lưu" (Save) | Category information is updated successfully | Device is connected to internet, staff account is valid, category exists |
+| ST-STAFF-015 | Test Delete Category | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Categories Management<br>4. Select a category that is not in use<br>5. Click "Xóa" (Delete)<br>6. Choose "Đồng ý" (Agree) when prompted | Category is deleted from the list | Device is connected to internet, staff account is valid, category exists and is not used by any products |
+
+6.5 Manage Disputes
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-STAFF-016 | Test View All Disputes | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Admin Dashboard<br>4. Click "Tranh chấp" (Disputes) tab | The disputes list screen is displayed with all disputes and their status | Device is connected to internet, staff account is valid |
+| ST-STAFF-017 | Test View Dispute Detail | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Disputes Management<br>4. Select a dispute from the list | Dispute detail screen displays: order information, dispute reason, status, messages | Device is connected to internet, staff account is valid, dispute exists |
+| ST-STAFF-018 | Test Resolve Dispute (Favor Buyer) | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Disputes Management<br>4. Select a dispute with status "pending" or "in_review"<br>5. Click "Giải quyết" (Resolve)<br>6. Select "Hoàn tiền cho người mua" (Refund to buyer)<br>7. Enter resolution reason<br>8. Click "Xác nhận" (Confirm) | Dispute status changes to "buyer_won", payment is refunded to buyer, dispute is resolved | Device is connected to internet, staff account is valid, dispute exists with appropriate status |
+| ST-STAFF-019 | Test Resolve Dispute (Favor Seller) | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Disputes Management<br>4. Select a dispute with status "pending" or "in_review"<br>5. Click "Giải quyết" (Resolve)<br>6. Select "Giải phóng thanh toán cho người bán" (Release payment to seller)<br>7. Enter resolution reason<br>8. Click "Xác nhận" (Confirm) | Dispute status changes to "seller_won", payment is released to seller, dispute is resolved | Device is connected to internet, staff account is valid, dispute exists with appropriate status |
+
+6.6 Manage Incident Reports
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-STAFF-020 | Test View Incident Reports | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Admin Dashboard<br>4. Click "Báo cáo sự cố" (Incident Reports) tab | The incident reports list screen is displayed with all reports | Device is connected to internet, staff account is valid |
+| ST-STAFF-021 | Test Approve Incident Report | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Incident Reports<br>4. Select an incident report<br>5. Click "Phê duyệt" (Approve)<br>6. Enter approval reason<br>7. Click "Xác nhận" (Confirm) | Incident report status changes to "approved", user receives notification | Device is connected to internet, staff account is valid, incident report exists |
+| ST-STAFF-022 | Test Reject Incident Report | 1. Open the web application<br>2. Login with a staff account<br>3. Navigate to Incident Reports<br>4. Select an incident report<br>5. Click "Từ chối" (Reject)<br>6. Enter rejection reason<br>7. Click "Xác nhận" (Confirm) | Incident report status changes to "rejected", user receives notification with reason | Device is connected to internet, staff account is valid, incident report exists |
+
+7. System Test Cases - Buyer Role
+
+Brief description about requirements which are tested in this sheet:
+This sheet covers system test cases for Buyer role, focusing on purchasing functions including browsing and searching auctions, placing manual bids and setting up auto-bids, using Buy Now feature, managing bidding activities (view active bids, won auctions, bidding history), managing watchlist and favorite sellers, handling orders and payments (view payment QR, confirm receipt, report issues), rating sellers, viewing notifications and messages, profile management, and AI recommendation system (validating that recommendations are relevant based on user history, watchlist, search keywords, and only show active auctions). All test cases validate that buyers can participate in auctions and complete purchase workflows correctly.
+
+7.1 Browse and Search Auctions
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-001 | Test View All Auctions | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to homepage or auctions page | The auctions list screen is displayed with all active auctions | Device is connected to internet, buyer account is valid |
+| ST-BUYER-002 | Test Search Auctions | 1. Open the web application<br>2. Login with a buyer account<br>3. Enter search keyword in search bar<br>4. Click "Tìm kiếm" (Search) | Search results display auctions matching the keyword | Device is connected to internet, buyer account is valid, keyword is entered |
+| ST-BUYER-003 | Test Filter Auctions by Category | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to auctions page<br>4. Select a category from filter<br>5. Click "Áp dụng" (Apply) | Auctions filtered by selected category are displayed | Device is connected to internet, buyer account is valid, category exists |
+| ST-BUYER-004 | Test View Auction Detail | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to auctions page<br>4. Click on an auction card | Auction detail page displays: product information, current bid, time remaining, bid history | Device is connected to internet, buyer account is valid, auction exists and is active |
+
+7.2 Bidding
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-005 | Test Place Manual Bid | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an active auction detail page<br>4. Enter bid amount (greater than current bid)<br>5. Click "Đặt giá" (Place Bid)<br>6. Confirm bid | Bid is placed successfully, current bid updates, bid appears in bid history, real-time update broadcasted | Device is connected to internet, buyer account is valid, auction is active, bid amount is valid |
+| ST-BUYER-006 | Test Setup Auto-Bid | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an active auction detail page<br>4. Click "Đặt giá tự động" (Auto-Bid)<br>5. Enter maximum bid amount<br>6. Click "Xác nhận" (Confirm) | Auto-bid is set up successfully, system automatically places bids up to maximum amount | Device is connected to internet, buyer account is valid, auction is active, max amount is greater than current bid + increment |
+| ST-BUYER-007 | Test Buy Now | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an active auction detail page with Buy Now option<br>4. Click "Mua ngay" (Buy Now)<br>5. Confirm purchase | Auction ends immediately, order is created with status "awaiting_payment", payment link is generated | Device is connected to internet, buyer account is valid, auction has BuyNowPrice and is active |
+
+7.3 Manage Bidding Activities
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-008 | Test View Active Bids | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Buyer Dashboard<br>4. Click "Đang đấu giá" (Active Bids) tab | List of auctions where buyer has placed bids is displayed | Device is connected to internet, buyer account is valid, buyer has placed at least one bid |
+| ST-BUYER-009 | Test View Won Auctions | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Buyer Dashboard<br>4. Click "Đã thắng" (Won) tab | List of auctions buyer has won is displayed | Device is connected to internet, buyer account is valid, buyer has won at least one auction |
+| ST-BUYER-010 | Test View Bidding History | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an auction detail page<br>4. Click "Lịch sử đấu giá" (Bidding History) | Bidding history displays all bids placed on the auction with timestamps | Device is connected to internet, buyer account is valid, auction has bids |
+
+7.4 Watchlist and Favorites
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-011 | Test Add Auction to Watchlist | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an auction detail page<br>4. Click "Theo dõi" (Watch) button | Auction is added to watchlist, button changes to "Đã theo dõi" (Watched) | Device is connected to internet, buyer account is valid, auction exists |
+| ST-BUYER-012 | Test View Watchlist | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Buyer Dashboard<br>4. Click "Theo dõi" (Watchlist) tab | List of auctions in watchlist is displayed | Device is connected to internet, buyer account is valid, watchlist has at least one auction |
+| ST-BUYER-013 | Test Remove Auction from Watchlist | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Buyer Dashboard<br>4. Click "Theo dõi" (Watchlist) tab<br>5. Click "Bỏ theo dõi" (Unwatch) on an auction | Auction is removed from watchlist | Device is connected to internet, buyer account is valid, auction exists in watchlist |
+| ST-BUYER-014 | Test Add Seller to Favorites | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to a seller profile page<br>4. Click "Thêm vào yêu thích" (Add to Favorites) | Seller is added to favorite sellers list | Device is connected to internet, buyer account is valid, seller exists and is not already in favorites |
+
+7.5 Orders and Payment
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-015 | Test View Orders | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Buyer Dashboard<br>4. Click "Đơn hàng" (Orders) tab | List of buyer's orders is displayed with order status | Device is connected to internet, buyer account is valid, buyer has at least one order |
+| ST-BUYER-016 | Test View Payment QR | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Orders<br>4. Select an order with status "awaiting_payment"<br>5. Click "Thanh toán" (Pay) | Payment QR code and payment link are displayed | Device is connected to internet, buyer account is valid, order exists with "awaiting_payment" status |
+| ST-BUYER-017 | Test View Payment Status | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Orders<br>4. Select an order<br>5. View payment information | Payment status is displayed (pending, paid_held, released_to_seller, refunded_to_buyer) | Device is connected to internet, buyer account is valid, order exists |
+| ST-BUYER-018 | Test Confirm Order Received | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Orders<br>4. Select an order with status "shipped"<br>5. Click "Xác nhận đã nhận hàng" (Confirm Received)<br>6. Confirm action | Order status changes to "completed", payment is released to seller, notification sent | Device is connected to internet, buyer account is valid, order exists with "shipped" status |
+| ST-BUYER-019 | Test Report Order Issue | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Orders<br>4. Select an order<br>5. Click "Báo cáo vấn đề" (Report Issue)<br>6. Enter issue description<br>7. Click "Gửi" (Submit) | Dispute is created, order status changes to "dispute", payment is held | Device is connected to internet, buyer account is valid, order exists |
+
+7.6 Rating and Feedback
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-020 | Test Rate Seller | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Won Auctions<br>4. Select a completed auction<br>5. Click "Đánh giá" (Rate)<br>6. Select rating (1-5 stars)<br>7. Enter feedback comment<br>8. Click "Gửi" (Submit) | Rating and feedback are submitted successfully, seller's reputation score updates | Device is connected to internet, buyer account is valid, auction is completed, buyer has not rated before |
+
+7.7 Notifications and Messages
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-021 | Test View Notifications | 1. Open the web application<br>2. Login with a buyer account<br>3. Click notification bell icon | Notifications list is displayed with unread count | Device is connected to internet, buyer account is valid |
+| ST-BUYER-022 | Test Mark Notification as Read | 1. Open the web application<br>2. Login with a buyer account<br>3. Click notification bell icon<br>4. Click on a notification | Notification is marked as read, unread count decreases | Device is connected to internet, buyer account is valid, unread notification exists |
+| ST-BUYER-023 | Test View Conversations | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages page<br>4. Click "Tin nhắn cá nhân" (Personal Messages) tab | List of conversations is displayed with last message and timestamp | Device is connected to internet, buyer account is valid |
+| ST-BUYER-024 | Test Send Personal Message | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages<br>4. Select a conversation or create new conversation<br>5. Type message content<br>6. Click "Gửi" (Send) | Message is sent successfully, appears in conversation, real-time update broadcasted via SignalR | Device is connected to internet, buyer account is valid, receiver exists |
+| ST-BUYER-025 | Test View Conversation Messages | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages<br>4. Select a conversation | Conversation messages are displayed in chronological order with sender information | Device is connected to internet, buyer account is valid, conversation exists |
+| ST-BUYER-026 | Test Mark Message as Read | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages<br>4. Select a conversation with unread messages<br>5. View messages | Messages are marked as read automatically when viewed | Device is connected to internet, buyer account is valid, unread messages exist |
+| ST-BUYER-027 | Test View Unread Messages Count | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages page | Unread messages count is displayed correctly | Device is connected to internet, buyer account is valid |
+| ST-BUYER-028 | Test Create New Conversation | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages<br>4. Click "Tạo cuộc trò chuyện mới" (Create New Conversation)<br>5. Enter receiver email<br>6. Type initial message<br>7. Click "Gửi" (Send) | New conversation is created and message is sent successfully | Device is connected to internet, buyer account is valid, receiver email exists |
+| ST-BUYER-029 | Test Auction Live Chat | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an active auction detail page<br>4. Scroll to Live Chat section<br>5. Type message in chat input<br>6. Click "Gửi" (Send) | Message appears in auction chat, real-time broadcasted to all viewers via SignalR | Device is connected to internet, buyer account is valid, auction exists and is active |
+| ST-BUYER-030 | Test View Auction Chat Messages | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to an active auction detail page<br>4. Scroll to Live Chat section | Auction chat messages are displayed with sender alias and timestamps | Device is connected to internet, buyer account is valid, auction exists |
+| ST-BUYER-031 | Test Dispute Chat | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages<br>4. Click "Tranh chấp" (Disputes) tab<br>5. Select a dispute conversation<br>6. Type message<br>7. Click "Gửi" (Send) | Message is sent in dispute chat, visible to buyer, seller, and support/admin, real-time update via SignalR | Device is connected to internet, buyer account is valid, dispute exists |
+| ST-BUYER-032 | Test View Dispute Chat | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Messages<br>4. Click "Tranh chấp" (Disputes) tab | List of active disputes with chat access is displayed | Device is connected to internet, buyer account is valid, at least one dispute exists |
+
+7.8 Profile Management
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-033 | Test View Profile | 1. Open the web application<br>2. Login with a buyer account<br>3. Click on profile icon<br>4. Select "Hồ sơ" (Profile) | Profile page displays user information (name, email, phone, avatar) | Device is connected to internet, buyer account is valid |
+| ST-BUYER-034 | Test Update Profile | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to Settings<br>4. Update profile information (name, phone, avatar)<br>5. Click "Lưu" (Save) | Profile information is updated successfully | Device is connected to internet, buyer account is valid |
+
+7.9 AI Recommendation
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-BUYER-035 | Test AI Recommendation for User with History | 1. Open the web application<br>2. Login with a buyer account that has bidding history, watchlist, or search keywords<br>3. Navigate to homepage<br>4. View "Dành riêng cho bạn" (Personalized Recommendations) section | AI recommendation displays auctions relevant to user's interests based on bidding history, watchlist, search keywords, and viewed auctions. Results are sorted by similarity score | Device is connected to internet, buyer account is valid, user has activity history, Pinecone service is available |
+| ST-BUYER-036 | Test AI Recommendation for New User | 1. Open the web application<br>2. Login with a new buyer account (no bidding history, watchlist, or search keywords)<br>3. Navigate to homepage<br>4. View "Dành riêng cho bạn" (Personalized Recommendations) section | AI recommendation displays random active auctions as fallback for new users | Device is connected to internet, new buyer account is valid, at least one active auction exists |
+| ST-BUYER-037 | Test AI Recommendation Based on Bidding History | 1. Open the web application<br>2. Login with a buyer account<br>3. Place bids on auctions in specific categories (e.g., Electronics)<br>4. Navigate to homepage<br>5. View AI recommendations | Recommended auctions are similar to categories user has bid on (e.g., Electronics-related auctions appear in recommendations) | Device is connected to internet, buyer account is valid, user has placed bids on auctions, Pinecone service is available |
+| ST-BUYER-038 | Test AI Recommendation Based on Watchlist | 1. Open the web application<br>2. Login with a buyer account<br>3. Add auctions to watchlist<br>4. Navigate to homepage<br>5. View AI recommendations | Recommended auctions are similar to auctions in user's watchlist | Device is connected to internet, buyer account is valid, user has auctions in watchlist, Pinecone service is available |
+| ST-BUYER-039 | Test AI Recommendation Only Shows Active Auctions | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to homepage<br>4. View AI recommendations | All recommended auctions have status "active" or "scheduled" and end time has not passed | Device is connected to internet, buyer account is valid, Pinecone service is available |
+| ST-BUYER-040 | Test AI Recommendation Result Count | 1. Open the web application<br>2. Login with a buyer account<br>3. Navigate to homepage<br>4. View AI recommendations | Recommendation displays appropriate number of results (default 4, maximum 24) | Device is connected to internet, buyer account is valid, Pinecone service is available |
+
+8. System Test Cases - Seller Role
+
+Brief description about requirements which are tested in this sheet:
+This sheet covers system test cases for Seller role, focusing on selling functions including product management (create, edit, delete pending products, save drafts), auction management (create auctions from approved products, view auction listings and history), order management (view orders, update shipping information, view payment notifications), rating buyers, and viewing seller statistics and profile. All test cases validate that sellers can manage their products and auctions, fulfill orders, and track their sales performance correctly.
+
+8.1 Manage Products
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SELLER-001 | Test View Pending Products | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Click "Sản phẩm chờ duyệt" (Pending Products) tab | List of products with "pending" status is displayed | Device is connected to internet, seller account is valid |
+| ST-SELLER-002 | Test Create Product | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Click "Tạo sản phẩm" (Create Product)<br>5. Fill in product information (title, description, price, category, images)<br>6. Click "Gửi để duyệt" (Submit for Approval) | Product is created with "pending" status, notification sent to admin | Device is connected to internet, seller account is valid, all required fields are filled |
+| ST-SELLER-003 | Test Edit Pending Product | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Pending Products<br>4. Select a product with "pending" status<br>5. Click "Chỉnh sửa" (Edit)<br>6. Update product information<br>7. Click "Lưu" (Save) | Product information is updated successfully | Device is connected to internet, seller account is valid, product exists with "pending" status |
+| ST-SELLER-004 | Test Delete Pending Product | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Pending Products<br>4. Select a product with "pending" status<br>5. Click "Xóa" (Delete)<br>6. Choose "Đồng ý" (Agree) when prompted | Product is deleted successfully | Device is connected to internet, seller account is valid, product exists with "pending" status |
+| ST-SELLER-005 | Test Save Draft Product | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Click "Tạo sản phẩm" (Create Product)<br>5. Fill in product information<br>6. Click "Lưu nháp" (Save Draft) | Product is saved as draft, can be edited later | Device is connected to internet, seller account is valid |
+
+8.2 Manage Auctions
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SELLER-006 | Test View All Auctions | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Click "Đấu giá của tôi" (My Auctions) tab | List of seller's auctions is displayed with status (active, scheduled, completed, paused, cancelled) | Device is connected to internet, seller account is valid |
+| ST-SELLER-007 | Test Create Auction | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Select an approved product<br>5. Click "Tạo đấu giá" (Create Auction)<br>6. Fill in auction details (starting bid, buy now price, start time, end time)<br>7. Click "Tạo" (Create) | Auction is created successfully, product status changes to "archived", auction status is "active" or "scheduled" | Device is connected to internet, seller account is valid, product exists with "approved" status |
+| ST-SELLER-008 | Test View Auction Detail | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to My Auctions<br>4. Click on an auction | Auction detail page displays: product info, current bid, bid history, time remaining | Device is connected to internet, seller account is valid, auction exists |
+| ST-SELLER-009 | Test View Auction History | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Click "Lịch sử đấu giá" (Auction History) tab | List of completed auctions with winner information is displayed | Device is connected to internet, seller account is valid |
+
+8.3 Manage Orders
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SELLER-010 | Test View Orders | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. Click "Đơn hàng" (Orders) tab | List of seller's orders is displayed with order status | Device is connected to internet, seller account is valid |
+| ST-SELLER-011 | Test View Order Detail | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Orders<br>4. Select an order | Order detail displays: buyer information, product, order status, payment status | Device is connected to internet, seller account is valid, order exists |
+| ST-SELLER-012 | Test Update Shipping Info | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Orders<br>4. Select an order with status "awaiting_shipment"<br>5. Click "Cập nhật thông tin vận chuyển" (Update Shipping Info)<br>6. Enter tracking number<br>7. Click "Lưu" (Save) | Order status changes to "shipped", shipping timestamp is set, buyer receives notification | Device is connected to internet, seller account is valid, order exists with "awaiting_shipment" status |
+| ST-SELLER-013 | Test View Payment Release Notification | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Notifications<br>4. View payment release notifications | Payment release notifications are displayed when buyer confirms receipt | Device is connected to internet, seller account is valid, order is completed |
+
+8.4 Rating and Feedback
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SELLER-014 | Test Rate Buyer | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Auction History<br>4. Select a completed auction<br>5. Click "Đánh giá" (Rate)<br>6. Select rating (1-5 stars)<br>7. Enter feedback comment<br>8. Click "Gửi" (Submit) | Rating and feedback are submitted successfully, buyer's reputation score updates | Device is connected to internet, seller account is valid, auction is completed, seller has not rated before |
+
+8.5 Statistics and Profile
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SELLER-015 | Test View Seller Statistics | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Seller Dashboard<br>4. View statistics section | Statistics display: total auctions, active auctions, completed auctions, total sales, reputation score | Device is connected to internet, seller account is valid |
+| ST-SELLER-016 | Test View Profile | 1. Open the web application<br>2. Login with a seller account<br>3. Click on profile icon<br>4. Select "Hồ sơ" (Profile) | Profile page displays seller information (name, email, phone, avatar, reputation, ratings) | Device is connected to internet, seller account is valid |
+
+8.6 Messages and Chat
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SELLER-017 | Test View Conversations | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Messages page<br>4. Click "Tin nhắn cá nhân" (Personal Messages) tab | List of conversations is displayed with last message and timestamp | Device is connected to internet, seller account is valid |
+| ST-SELLER-018 | Test Send Personal Message | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Messages<br>4. Select a conversation or create new<br>5. Type message content<br>6. Click "Gửi" (Send) | Message is sent successfully, appears in conversation, real-time update broadcasted via SignalR | Device is connected to internet, seller account is valid, receiver exists |
+| ST-SELLER-019 | Test Auction Live Chat | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to own auction detail page<br>4. Scroll to Live Chat section<br>5. Type message in chat input<br>6. Click "Gửi" (Send) | Message appears in auction chat, real-time broadcasted to all viewers via SignalR | Device is connected to internet, seller account is valid, seller's auction exists and is active |
+| ST-SELLER-020 | Test View Auction Chat Messages | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to own auction detail page<br>4. Scroll to Live Chat section | Auction chat messages are displayed with sender alias and timestamps | Device is connected to internet, seller account is valid, auction exists |
+| ST-SELLER-021 | Test Dispute Chat | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Messages<br>4. Click "Tranh chấp" (Disputes) tab<br>5. Select a dispute conversation<br>6. Type message<br>7. Click "Gửi" (Send) | Message is sent in dispute chat, visible to buyer, seller, and support/admin, real-time update via SignalR | Device is connected to internet, seller account is valid, dispute exists |
+| ST-SELLER-022 | Test View Dispute Chat | 1. Open the web application<br>2. Login with a seller account<br>3. Navigate to Messages<br>4. Click "Tranh chấp" (Disputes) tab | List of active disputes with chat access is displayed | Device is connected to internet, seller account is valid, at least one dispute exists |
+
+9. System Test Cases - Support Role
+
+Brief description about requirements which are tested in this sheet:
+This sheet covers system test cases for Support role, focusing on customer support functions including user management (view users, view user details, reset user passwords) and dispute resolution (view disputes, view dispute details, create dispute chat, resolve disputes by favoring buyer or seller). All test cases validate that support staff can assist users and resolve disputes correctly.
+
+9.1 Manage Users
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SUPPORT-001 | Test View All Users | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Admin Dashboard<br>4. Click "Quản lý người dùng" (User Management) tab | The user list screen is displayed with all users and their information | Device is connected to internet, support account is valid and active |
+| ST-SUPPORT-002 | Test View User Detail | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to User Management<br>4. Select a user | User detail page displays: profile information, account status, roles, order history | Device is connected to internet, support account is valid, user exists |
+| ST-SUPPORT-003 | Test Reset User Password | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to User Management<br>4. Select a user<br>5. Click "Đặt lại mật khẩu" (Reset Password)<br>6. Enter new password<br>7. Click "Xác nhận" (Confirm) | User password is reset successfully, user can login with new password | Device is connected to internet, support account is valid, user exists |
+
+9.2 Manage Disputes
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SUPPORT-004 | Test View All Disputes | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Admin Dashboard<br>4. Click "Tranh chấp" (Disputes) tab | The disputes list screen is displayed with all disputes and their status | Device is connected to internet, support account is valid |
+| ST-SUPPORT-005 | Test View Dispute Detail | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Disputes Management<br>4. Select a dispute from the list | Dispute detail screen displays: order information, dispute reason, status, messages, chat history | Device is connected to internet, support account is valid, dispute exists |
+| ST-SUPPORT-006 | Test Dispute Chat | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Messages<br>4. Click "Tranh chấp" (Disputes) tab<br>5. Select a dispute conversation<br>6. Type message<br>7. Click "Gửi" (Send) | Message is sent in dispute chat, visible to buyer, seller, and support, real-time update via SignalR | Device is connected to internet, support account is valid, dispute exists |
+| ST-SUPPORT-007 | Test View Dispute Chat Messages | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Messages<br>4. Click "Tranh chấp" (Disputes) tab<br>5. Select a dispute conversation | Dispute chat messages are displayed with all participants (buyer, seller, support/admin) | Device is connected to internet, support account is valid, dispute exists |
+| ST-SUPPORT-008 | Test Resolve Dispute (Favor Buyer) | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Disputes Management<br>4. Select a dispute with status "pending" or "in_review"<br>5. Click "Giải quyết" (Resolve)<br>6. Select "Hoàn tiền cho người mua" (Refund to buyer)<br>7. Enter resolution reason<br>8. Click "Xác nhận" (Confirm) | Dispute status changes to "buyer_won", payment is refunded to buyer, dispute is resolved | Device is connected to internet, support account is valid, dispute exists with appropriate status |
+| ST-SUPPORT-009 | Test Resolve Dispute (Favor Seller) | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Disputes Management<br>4. Select a dispute with status "pending" or "in_review"<br>5. Click "Giải quyết" (Resolve)<br>6. Select "Giải phóng thanh toán cho người bán" (Release payment to seller)<br>7. Enter resolution reason<br>8. Click "Xác nhận" (Confirm) | Dispute status changes to "seller_won", payment is released to seller, dispute is resolved | Device is connected to internet, support account is valid, dispute exists with appropriate status |
+
+9.3 Support Messages
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-SUPPORT-010 | Test View Support Conversations | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Messages<br>4. Click "Hỗ trợ" (Support) tab | List of support conversations with users is displayed | Device is connected to internet, support account is valid |
+| ST-SUPPORT-011 | Test Send Support Message | 1. Open the web application<br>2. Login with a support account<br>3. Navigate to Messages<br>4. Select a support conversation<br>5. Type message<br>6. Click "Gửi" (Send) | Support message is sent successfully, user receives message, real-time update via SignalR | Device is connected to internet, support account is valid, conversation exists |
+
+10. System Test Cases - Guest Role
+
+Brief description about requirements which are tested in this sheet:
+This sheet covers system test cases for Guest role (unauthenticated users), focusing on public access functions including browsing public pages (homepage, about, contact), viewing auctions and auction details (read-only), searching and filtering auctions, viewing seller profiles and products, and authentication (register new account, login). All test cases validate that guests can browse the platform and are properly restricted from protected functions, with appropriate redirects to login when attempting unauthorized actions.
+
+10.1 Browse Public Pages
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-GUEST-001 | Test View Homepage | 1. Open the web application<br>2. Do not login (remain as guest) | Homepage displays: hero section, featured auctions, categories, search bar | Device is connected to internet |
+| ST-GUEST-002 | Test View About Page | 1. Open the web application<br>2. Click "Giới thiệu" (About) in navigation menu | About page displays information about the platform | Device is connected to internet |
+| ST-GUEST-003 | Test View Contact Page | 1. Open the web application<br>2. Click "Liên hệ" (Contact) in navigation menu | Contact page displays contact form and information | Device is connected to internet |
+
+10.2 Browse Auctions
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-GUEST-004 | Test View All Auctions | 1. Open the web application<br>2. Click "Đấu giá" (Auctions) in navigation menu | Auctions list page displays all active auctions with product images, current bid, time remaining | Device is connected to internet, at least one active auction exists |
+| ST-GUEST-005 | Test View Auction Detail | 1. Open the web application<br>2. Navigate to auctions page<br>3. Click on an auction card | Auction detail page displays: product information, images, current bid, time remaining, bid history (read-only) | Device is connected to internet, auction exists and is active |
+| ST-GUEST-006 | Test Attempt to Place Bid (Unauthorized) | 1. Open the web application<br>2. Navigate to an auction detail page<br>3. Try to place a bid | System redirects to login page or displays message "Vui lòng đăng nhập để đặt giá" (Please login to place bid) | Device is connected to internet, auction exists and is active |
+
+10.3 Search and Filter
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-GUEST-007 | Test Search Auctions | 1. Open the web application<br>2. Enter search keyword in search bar<br>3. Click "Tìm kiếm" (Search) or press Enter | Search results page displays auctions matching the keyword | Device is connected to internet, keyword is entered |
+| ST-GUEST-008 | Test Filter Auctions by Category | 1. Open the web application<br>2. Navigate to auctions page<br>3. Select a category from filter options<br>4. Click "Áp dụng" (Apply) | Auctions filtered by selected category are displayed | Device is connected to internet, category exists |
+| ST-GUEST-009 | Test View Categories | 1. Open the web application<br>2. Click "Danh mục" (Categories) in navigation menu | Categories page displays all available categories | Device is connected to internet |
+
+10.4 View Seller Information
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-GUEST-010 | Test View Seller Profile | 1. Open the web application<br>2. Navigate to an auction detail page<br>3. Click on seller name or "Xem trang người bán" (View Seller Page) | Seller profile page displays: seller information, reputation score, ratings, list of seller's auctions | Device is connected to internet, seller exists |
+| ST-GUEST-011 | Test View Seller's Products | 1. Open the web application<br>2. Navigate to seller profile page<br>3. Click "Xem tất cả sản phẩm" (View All Products) | List of seller's products/auctions is displayed | Device is connected to internet, seller exists and has products |
+
+10.5 Authentication
+
+| Test Case ID | Test Case Description | Test Case Procedure | Expected Results | Pre-conditions |
+|--------------|----------------------|---------------------|------------------|---------------|
+| ST-GUEST-012 | Test View Login Page | 1. Open the web application<br>2. Click "Đăng nhập" (Login) button | Login page displays with email and password fields | Device is connected to internet |
+| ST-GUEST-013 | Test View Register Page | 1. Open the web application<br>2. Click "Đăng ký" (Register) button or link | Register page displays with registration form (email, password, confirm password, full name) | Device is connected to internet |
+| ST-GUEST-014 | Test Register New Account | 1. Open the web application<br>2. Navigate to register page<br>3. Fill in registration form (email, password, confirm password, full name)<br>4. Click "Đăng ký" (Register) | Account is created successfully, email verification message is displayed, user is redirected to verify page | Device is connected to internet, email is unique and not registered before |
+| ST-GUEST-015 | Test Register with Duplicate Email | 1. Open the web application<br>2. Navigate to register page<br>3. Enter an email that already exists<br>4. Fill in other required fields<br>5. Click "Đăng ký" (Register) | Error message displays "Email already in use" or "Email đã được sử dụng" | Device is connected to internet, email already exists in system |
+| ST-GUEST-016 | Test Login with Valid Credentials | 1. Open the web application<br>2. Navigate to login page<br>3. Enter valid email and password<br>4. Click "Đăng nhập" (Login) | User is logged in successfully, redirected to appropriate dashboard based on role | Device is connected to internet, account exists and is active, credentials are correct |
+| ST-GUEST-017 | Test Login with Invalid Credentials | 1. Open the web application<br>2. Navigate to login page<br>3. Enter invalid email or password<br>4. Click "Đăng nhập" (Login) | Error message displays "The email or password is incorrect" or "Email hoặc mật khẩu không đúng" | Device is connected to internet |
+| ST-GUEST-018 | Test Access Protected Page (Redirect to Login) | 1. Open the web application<br>2. As guest, try to access protected page (e.g., /buyer, /seller, /admin)<br>3. Enter URL directly in browser | System redirects to login page with message to login first | Device is connected to internet |
+

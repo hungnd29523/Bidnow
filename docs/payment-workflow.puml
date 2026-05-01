@@ -1,0 +1,107 @@
+@startuml Payment Workflow - Activity Diagram
+
+title Payment Workflow - Activity Diagram
+
+|#LightBlue|**Buyer**|
+start
+:Auction ends, buyer wins;
+
+:View order details;
+
+:Click pay button;
+
+|#LightGreen|**System**|
+:Check order exists and status;
+
+if (Order valid?) then (No)
+  |#LightBlue|**Buyer**|
+  :Return error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Check order status is awaiting_payment;
+
+if (Status valid?) then (No)
+  |#LightBlue|**Buyer**|
+  :Return error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+:Create payment link via PayOS API;
+
+:Save payment record with status pending;
+
+:Return payment link to buyer;
+
+|#LightBlue|**Buyer**|
+:Redirect to PayOS payment page;
+
+:Complete payment on PayOS;
+
+|#LightYellow|**PayOS**|
+:Process payment;
+
+:Send webhook to system;
+
+|#LightGreen|**System**|
+:Receive webhook from PayOS;
+
+:Validate webhook signature;
+
+if (Webhook valid?) then (No)
+  :Return error;
+  stop
+else (Yes)
+endif
+
+|#LightGreen|**System**|
+if (Payment status?) then (PAID)
+  :Update payment status to paid_held;
+  
+  :Update order status to awaiting_shipment;
+  
+  :Notify seller payment received;
+  
+  |#LightBlue|**Buyer**|
+  :Payment successful;
+  stop
+  
+elseif (CANCELLED) then
+  :Update payment status to cancelled;
+  
+  |#LightBlue|**Buyer**|
+  :Payment cancelled;
+  stop
+  
+else (PENDING)
+  :Keep payment status as pending;
+  
+  |#LightBlue|**Buyer**|
+  :Payment pending;
+  stop
+endif
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

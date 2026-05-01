@@ -1,0 +1,155 @@
+@startuml Place Bid Sequence Diagram
+
+title Place Bid - Sequence Diagram
+
+actor Client
+participant "AuctionView" as View
+participant "BidController" as Controller
+participant "BidService" as Service
+participant "BidRepository" as Repository
+participant "BidRequestDto" as RequestDTO
+participant "Bid" as BidEntity
+participant "BidDto" as BidDTO
+participant "BidResultDto" as ResultDTO
+database "BidNowDbContext" as DbContext
+database "Database" as Database
+
+Client -> View: User enters bid amount\nand clicks "Place Bid"
+activate View
+
+View -> View: Create BidRequestDto\n(bidderId, amount)
+
+View -> Controller: POST /api/auctions/{id}/bid\n(BidRequestDto)
+activate Controller
+deactivate View
+
+Controller -> Service: PlaceBidAsync(auctionId, bidderId, amount, isAutoBid)
+activate Service
+
+Service -> DbContext: FirstOrDefaultAsync(Auctions)\nWhere Id == auctionId
+activate DbContext
+DbContext -> Database: SELECT * FROM Auctions\nWHERE Id = @auctionId
+activate Database
+Database --> DbContext: Auction data
+deactivate Database
+DbContext --> Service: Auction entity
+deactivate DbContext
+
+alt Auction not found
+    Service --> Controller: throw InvalidOperationException\n("Auction not found")
+    Controller --> View: BadRequest\n(error message)
+    activate View
+    deactivate Service
+    deactivate Controller
+    View -> View: Display error message\n"Auction not found"
+    View --> Client: Show error notification
+    deactivate View
+else Auction status != "active"
+    Service --> Controller: throw InvalidOperationException\n("Auction not active")
+    Controller --> View: BadRequest\n(error message)
+    activate View
+    deactivate Service
+    deactivate Controller
+    View -> View: Display error message\n"Auction not active"
+    View --> Client: Show error notification
+    deactivate View
+else Auction.EndTime <= DateTime.Now
+    Service --> Controller: throw InvalidOperationException\n("Auction ended")
+    Controller --> View: BadRequest\n(error message)
+    activate View
+    deactivate Service
+    deactivate Controller
+    View -> View: Display error message\n"Auction ended"
+    View --> Client: Show error notification
+    deactivate View
+else amount <= CurrentBid OR amount < StartingBid
+    Service --> Controller: throw InvalidOperationException\n("Bid too low")
+    Controller --> View: BadRequest\n(error message)
+    activate View
+    deactivate Service
+    deactivate Controller
+    View -> View: Display error message\n"Bid too low"
+    View --> Client: Show error notification
+    deactivate View
+else Valid bid
+    Service -> BidEntity: new Bid()\n(auctionId, bidderId, amount, BidTime, isAutoBid)
+    activate BidEntity
+    deactivate BidEntity
+    
+    Service -> Repository: AddAsync(bid)
+    activate Repository
+    
+    Repository -> DbContext: Bids.Add(bid)
+    activate DbContext
+    DbContext -> Database: INSERT INTO Bids\n(AuctionId, BidderId, Amount, BidTime, IsAutoBid)
+    activate Database
+    Database --> DbContext: Bid inserted
+    deactivate Database
+    DbContext --> Repository: Bid added
+    deactivate DbContext
+    
+    Repository -> DbContext: SaveChangesAsync()
+    activate DbContext
+    DbContext -> Database: COMMIT TRANSACTION
+    activate Database
+    Database --> DbContext: Changes saved
+    deactivate Database
+    DbContext --> Repository: SaveChanges completed
+    deactivate DbContext
+    
+    Repository --> Service: Bid entity (with Id)
+    deactivate Repository
+    
+    Service -> DbContext: Auctions.Update(auction)\nSet CurrentBid = amount\nSet BidCount = BidCount + 1
+    activate DbContext
+    DbContext -> Database: UPDATE Auctions\nSET CurrentBid = @amount,\n    BidCount = BidCount + 1\nWHERE Id = @auctionId
+    activate Database
+    Database --> DbContext: Auction updated
+    deactivate Database
+    DbContext --> Service: Auction updated
+    deactivate DbContext
+    
+    Service -> DbContext: SaveChangesAsync()
+    activate DbContext
+    DbContext -> Database: COMMIT TRANSACTION
+    activate Database
+    Database --> DbContext: Changes saved
+    deactivate Database
+    DbContext --> Service: SaveChanges completed
+    deactivate DbContext
+    
+    Service -> DbContext: FirstOrDefaultAsync(Users)\nWhere Id == bidderId
+    activate DbContext
+    DbContext -> Database: SELECT * FROM Users\nWHERE Id = @bidderId
+    activate Database
+    Database --> DbContext: User data
+    deactivate Database
+    DbContext --> Service: User entity
+    deactivate DbContext
+    
+    Service -> BidDTO: new BidDto()\n(bidderId, bidderName, amount, bidTime)
+    activate BidDTO
+    deactivate BidDTO
+    
+    Service -> ResultDTO: new BidResultDto()\n(auctionId, currentBid, bidCount, placedBid)
+    activate ResultDTO
+    deactivate ResultDTO
+    
+    note right of Service: Optional: Cache to Redis\nOptional: Broadcast SignalR\nOptional: Trigger Auto Bid Processing
+    
+    Service --> Controller: BidResultDto
+    deactivate Service
+    
+    Controller --> View: Ok(BidResultDto)
+    activate View
+    deactivate Controller
+    
+    View -> View: Update UI with new bid\n(currentBid, bidCount, placedBid)
+    View -> View: Display success message\nUpdate bid history
+    
+    View --> Client: Show updated auction view\nwith new bid information
+    deactivate View
+end
+
+@enduml
+

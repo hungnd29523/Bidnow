@@ -1,0 +1,129 @@
+@startuml Workflow Tạo Item - Activity Diagram
+
+title Workflow Tạo Item - Activity Diagram với các Actor liên quan
+
+|#LightBlue|**Seller**|
+start
+:Điền form thông tin item:
+* Title (bắt buộc)
+* Category (bắt buộc)
+* Description
+* BasePrice (bắt buộc)
+* Condition
+* Location
+* ItemSpecifics
+* Images;
+
+:Validate form (client-side);
+
+if (Form hợp lệ?) then (Không)
+  :Hiển thị lỗi validation;
+  stop
+else (Có)
+endif
+
+:Chọn ảnh sản phẩm (nếu có);
+
+|#LightGreen|**System**|
+:Upload images lên server;
+
+if (Upload thành công?) then (Không)
+  |#LightBlue|**Seller**|
+  :Hiển thị lỗi upload;
+  stop
+else (Có)
+endif
+
+|#LightBlue|**Seller**|
+:Gửi request tạo item\n(POST /api/items);
+
+|#LightGreen|**System**|
+:Validate dữ liệu:
+* Title không rỗng
+* BasePrice > 0
+* CategoryId hợp lệ
+* SellerId hợp lệ;
+
+if (Dữ liệu hợp lệ?) then (Không)
+  |#LightBlue|**Seller**|
+  :Nhận lỗi validation\n(BadRequest);
+  stop
+else (Có)
+endif
+
+|#LightGreen|**System**|
+:Tạo Item entity với status = "pending";
+:Lưu vào database;
+
+:Query danh sách Admin users\n(từ UserRoles table);
+
+partition "Gửi thông báo cho Admin" {
+  :Với mỗi Admin user:
+  Tạo notification
+  Type: "item_pending"
+  Link: "/admin?tab=pending";
+}
+
+:Gửi SignalR real-time update:
+* AdminPendingItemsChanged
+* AdminStatsUpdated
+* AdminAnalyticsUpdated;
+
+|#LightYellow|**Admin**|
+:Admin nhận thông báo\n(item_pending notification);
+
+:Admin xem danh sách pending items\n(GET /api/items?statuses=pending);
+
+:Admin xem chi tiết item;
+
+partition "Admin quyết định" {
+  if (Admin quyết định?) then (Phê duyệt)
+    |#LightGreen|**System**|
+    :Cập nhật status = "approved"\n(PUT /api/items/{id}/approve);
+    :Lưu vào database;
+    
+    :Tạo notification cho Seller:
+    Type: "item_approved"
+    Message: "Sản phẩm '{Title}' đã được phê duyệt"
+    Link: "/seller?openAuctionDialog=true";
+    
+    :Gửi SignalR update:
+    * AdminPendingItemsChanged
+    * AdminStatsUpdated;
+    
+    |#LightBlue|**Seller**|
+    :Nhận thông báo phê duyệt;
+    :Item đã được phê duyệt\n(status = "approved");
+    stop
+    
+  elseif (Từ chối) then
+    |#LightYellow|**Admin**|
+    :Nhập lý do từ chối;
+    
+    |#LightGreen|**System**|
+    :Cập nhật status = "rejected"\n(PUT /api/items/{id}/reject);
+    :Lưu vào database;
+    
+    :Tạo notification cho Seller:
+    Type: "item_rejected"
+    Message: "Sản phẩm '{Title}' bị từ chối.\nLý do: {Reason}"
+    Link: "/seller/items";
+    
+    :Gửi SignalR update:
+    * AdminPendingItemsChanged
+    * AdminStatsUpdated;
+    
+    |#LightBlue|**Seller**|
+    :Nhận thông báo từ chối;
+    :Item bị từ chối\n(status = "rejected");
+    stop
+    
+  else (Chưa quyết định)
+    |#LightYellow|**Admin**|
+    :Chờ Admin xem xét thêm;
+    stop
+  endif
+}
+
+@enduml
+

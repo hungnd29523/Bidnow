@@ -1,0 +1,115 @@
+@startuml Setup Auto Bid Class Diagram
+
+title Setup Auto Bid - Class Diagram
+
+' ============================================
+' AUTO BID CONTROLLER LAYER
+' ============================================
+class AutoBidController {
+    + CreateOrUpdate(dto: CreateAutoBidDto): AutoBidDto
+    + Get(auctionId: int, userId: int): AutoBidDto
+    + Deactivate(auctionId: int, userId: int): void
+    + GetBidIncrement(currentPrice: decimal): decimal
+}
+
+' ============================================
+' AUTO BID SERVICE LAYER (INTERFACE)
+' ============================================
+interface IAutoBidService {
+    + CreateOrUpdateAutoBidAsync(auctionId: int, userId: int, maxAmount: decimal): AutoBidDto
+    + DeactivateAutoBidAsync(auctionId: int, userId: int): bool
+    + GetAutoBidAsync(auctionId: int, userId: int): AutoBidDto?
+    + ProcessAutoBidsAfterBidAsync(auctionId: int, currentBidderId: int, currentBid: decimal): void
+    + CalculateBidIncrement(currentPrice: decimal): decimal
+}
+
+' ============================================
+' AUTO BID SERVICE LAYER (IMPLEMENTATION)
+' ============================================
+class AutoBidService {
+    + CreateOrUpdateAutoBidAsync(auctionId: int, userId: int, maxAmount: decimal): AutoBidDto
+    + DeactivateAutoBidAsync(auctionId: int, userId: int): bool
+    + GetAutoBidAsync(auctionId: int, userId: int): AutoBidDto?
+    + ProcessAutoBidsAfterBidAsync(auctionId: int, currentBidderId: int, currentBid: decimal): void
+    + CalculateBidIncrement(currentPrice: decimal): decimal
+}
+
+' ============================================
+' AUTO BID REPOSITORY LAYER (INTERFACE)
+' ============================================
+interface IAutoBidRepository {
+    + GetByAuctionAndUserAsync(auctionId: int, userId: int): AutoBid?
+    + CreateOrUpdateAsync(autoBid: AutoBid): AutoBid
+    + GetActiveByAuctionAsync(auctionId: int): List<AutoBid>
+    + DeactivateAsync(autoBidId: int): bool
+}
+
+' ============================================
+' AUTO BID REPOSITORY LAYER (IMPLEMENTATION)
+' ============================================
+class AutoBidRepository {
+    + GetByAuctionAndUserAsync(auctionId: int, userId: int): AutoBid?
+    + CreateOrUpdateAsync(autoBid: AutoBid): AutoBid
+    + GetActiveByAuctionAsync(auctionId: int): List<AutoBid>
+    + DeactivateAsync(autoBidId: int): bool
+}
+
+' ============================================
+' DATA TRANSFER OBJECTS (DTOs)
+' ============================================
+class AutoBidDto {
+    + Id: int
+    + AuctionId: int
+    + UserId: int
+    + MaxAmount: decimal
+    + IsActive: bool
+    + CreatedAt: DateTime?
+}
+
+class CreateAutoBidDto {
+    + AuctionId: int
+    + UserId: int
+    + MaxAmount: decimal
+}
+
+' ============================================
+' DOMAIN MODELS
+' ============================================
+class AutoBid {
+    + Id: int
+    + AuctionId: int
+    + UserId: int
+    + MaxAmount: decimal
+    + IsActive: bool?
+    + CreatedAt: DateTime?
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+' Controller to Service Interface
+AutoBidController ..> IAutoBidService : depends on
+
+' Service Interface to Service Implementation
+IAutoBidService <|.. AutoBidService : realizes
+
+' Service to Repository Interface
+AutoBidService ..> IAutoBidRepository : depends on
+
+' Repository Interface to Repository Implementation
+IAutoBidRepository <|.. AutoBidRepository : realizes
+
+' Repository to Domain Model
+AutoBidRepository ..> AutoBid : uses
+
+' Service to DTOs
+AutoBidService ..> AutoBidDto : returns
+AutoBidService ..> CreateAutoBidDto : accepts
+
+' Controller to DTOs
+AutoBidController ..> CreateAutoBidDto : accepts
+AutoBidController ..> AutoBidDto : returns
+
+@enduml
+

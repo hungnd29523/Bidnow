@@ -1,0 +1,107 @@
+@startuml View Bidding History Class Diagram
+
+title View Bidding History - Class Diagram
+
+' ============================================
+' BIDDING HISTORY CONTROLLER LAYER
+' ============================================
+class BiddingHistoryController {
+    + GetBiddingHistory(bidderId: int, page: int, pageSize: int): PaginatedResultB<BiddingHistoryDto>
+}
+
+' ============================================
+' BID SERVICE LAYER (INTERFACE)
+' ============================================
+interface IBidService {
+    + GetBiddingHistoryAsync(bidderId: int, page: int, pageSize: int): PaginatedResultB<BiddingHistoryDto>
+}
+
+' ============================================
+' BID SERVICE LAYER (IMPLEMENTATION)
+' ============================================
+class BidService {
+    + GetBiddingHistoryAsync(bidderId: int, page: int, pageSize: int): PaginatedResultB<BiddingHistoryDto>
+}
+
+' ============================================
+' BID REPOSITORY LAYER (INTERFACE)
+' ============================================
+interface IBidRepository {
+    + GetBidsByBidderAsync(bidderId: int, skip: int, take: int): List<Bid>
+    + GetTotalBidCountByBidderAsync(bidderId: int): int
+}
+
+' ============================================
+' BID REPOSITORY LAYER (IMPLEMENTATION)
+' ============================================
+class BidRepository {
+    + GetBidsByBidderAsync(bidderId: int, skip: int, take: int): List<Bid>
+    + GetTotalBidCountByBidderAsync(bidderId: int): int
+}
+
+' ============================================
+' DATA TRANSFER OBJECTS (DTOs)
+' ============================================
+class BiddingHistoryDto {
+    + BidId: int
+    + AuctionId: int
+    + ItemTitle: string
+    + ItemImages: string?
+    + CategoryName: string?
+    + YourBid: decimal
+    + BidTime: DateTime
+    + Status: string
+    + CurrentBid: decimal?
+    + EndTime: DateTime?
+    + AuctionStatus: string?
+    + IsAutoBid: bool
+}
+
+class PaginatedResultB<T> {
+    + Data: List<T>
+    + TotalCount: int
+    + Page: int
+    + PageSize: int
+}
+
+' ============================================
+' DOMAIN MODELS
+' ============================================
+class Bid {
+    + Id: int
+    + AuctionId: int
+    + BidderId: int
+    + Amount: decimal
+    + BidTime: DateTime?
+    + IsAutoBid: bool?
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+' Controller to Service Interface
+BiddingHistoryController ..> IBidService : depends on
+
+' Service Interface to Service Implementation
+IBidService <|.. BidService : realizes
+
+' Service to Repository Interface
+BidService ..> IBidRepository : depends on
+
+' Repository Interface to Repository Implementation
+IBidRepository <|.. BidRepository : realizes
+
+' Repository to Domain Model
+BidRepository ..> Bid : uses
+
+' Service to DTOs
+BidService ..> BiddingHistoryDto : returns
+BidService ..> PaginatedResultB : returns
+
+' Controller to DTOs
+BiddingHistoryController ..> BiddingHistoryDto : returns
+BiddingHistoryController ..> PaginatedResultB : returns
+
+@enduml
+

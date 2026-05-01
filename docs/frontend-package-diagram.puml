@@ -1,0 +1,86 @@
+@startuml Frontend Package Diagram
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam package {
+    BackgroundColor<<app>> LightBlue
+    BackgroundColor<<components>> LightGreen
+    BackgroundColor<<lib>> LightYellow
+    BackgroundColor<<hooks>> LightPink
+    BackgroundColor<<public>> LightGray
+    BackgroundColor<<styles>> LightCoral
+}
+
+package "Frontend" {
+    
+    package "app" <<app>> {
+        package "admin"
+        package "about"
+        package "auction"
+        package "auctions"
+        package "buyer"
+        package "categories"
+        package "contact"
+        package "forgot-password"
+        package "login"
+        package "messages"
+        package "payment"
+        package "profile"
+        package "register"
+        package "reset-password"
+        package "search"
+        package "seller"
+        package "settings"
+        package "verify"
+    }
+    
+    package "components" <<components>> {
+        package "admin"
+        package "auction"
+        package "buyer"
+        package "seller"
+        package "disputes"
+        package "messages"
+        package "ui"
+    }
+    
+    package "lib" <<lib>> {
+        package "api" {
+            package "auth"
+            package "auctions"
+            package "admin"
+            package "users"
+            package "categories"
+            package "payments"
+            package "messages"
+            package "disputes"
+            package "watchlist"
+            package "ratings"
+        }
+        package "realtime" {
+            package "auctionHub"
+            package "messageHub"
+        }
+        package "utils"
+    }
+    
+    package "hooks" <<hooks>> {
+    }
+    
+    package "public" <<public>> {
+    }
+    
+    package "styles" <<styles>> {
+    }
+}
+
+' Dependencies
+[app] --> [components]
+[app] --> [lib]
+[components] --> [lib]
+[components] --> [hooks]
+[lib/api] --> [lib/utils]
+[lib/realtime] --> [lib/utils]
+
+@enduml
+
